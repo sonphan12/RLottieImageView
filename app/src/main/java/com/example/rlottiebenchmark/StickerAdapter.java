@@ -7,6 +7,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.rlottiebenchmark.widget.RLottieDrawable;
 import com.example.rlottiebenchmark.widget.RLottieImageView;
 
 import java.util.ArrayList;
@@ -15,6 +16,8 @@ import java.util.List;
 class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> {
 
     private List<StickerUiModel> stickers = new ArrayList<>();
+
+    private DispatchQueuePool mDispatchQueuePool = new DispatchQueuePool(4);
 
     @NonNull
     @Override
@@ -26,7 +29,7 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
 
     @Override
     public void onBindViewHolder(@NonNull StickerHolder holder, int position) {
-        holder.bindView(stickers.get(position));
+        holder.bindView(stickers.get(position), mDispatchQueuePool);
     }
 
     @Override
@@ -49,10 +52,15 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
             mImgView = (RLottieImageView) itemView;
         }
 
-        public void bindView(final StickerUiModel stickerUiModel) {
-            mImgView.setAutoRepeat(true);
-            mImgView.setAnimation(stickerUiModel.resId, stickerUiModel.width, stickerUiModel.height);
-            mImgView.playAnimation();
+        public void bindView(final StickerUiModel stickerUiModel, DispatchQueuePool dispatchQueuePool) {
+            dispatchQueuePool.execute(() -> {
+                RLottieDrawable drawable = new RLottieDrawable(stickerUiModel.resId, "" + stickerUiModel.resId, AndroidUtilities.dp(stickerUiModel.width), AndroidUtilities.dp(stickerUiModel.height), false, null);
+                AndroidUtilities.runOnUIThread(() -> {
+                    mImgView.setAutoRepeat(true);
+                    mImgView.setAnimation(drawable);
+                    mImgView.playAnimation();
+                });
+            });
         }
     }
 
