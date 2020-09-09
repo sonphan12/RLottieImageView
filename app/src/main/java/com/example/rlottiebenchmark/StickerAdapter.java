@@ -12,16 +12,19 @@ import com.example.rlottiebenchmark.widget.RLottieImageView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> {
 
     private List<StickerUiModel> stickers = new ArrayList<>();
 
-    private DispatchQueuePool mDispatchQueuePool = new DispatchQueuePool(4);
+    private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
     @NonNull
     @Override
-
     public StickerHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View view = new RLottieImageView(parent.getContext());
         return new StickerHolder(view);
@@ -29,7 +32,7 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
 
     @Override
     public void onBindViewHolder(@NonNull StickerHolder holder, int position) {
-        holder.bindView(stickers.get(position), mDispatchQueuePool);
+        holder.bindView(stickers.get(position), mExecutor);
     }
 
     @Override
@@ -47,13 +50,20 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
 
         private RLottieImageView mImgView;
 
+        private Future currentTask;
+
         public StickerHolder(@NonNull View itemView) {
             super(itemView);
             mImgView = (RLottieImageView) itemView;
         }
 
-        public void bindView(final StickerUiModel stickerUiModel, DispatchQueuePool dispatchQueuePool) {
-            dispatchQueuePool.execute(() -> {
+        public void bindView(final StickerUiModel stickerUiModel, ExecutorService executor) {
+            mImgView.setAnimation(-1, stickerUiModel.width, stickerUiModel.height);
+            mImgView.invalidate();
+            if (currentTask != null && (!currentTask.isCancelled() || !currentTask.isDone())) {
+                currentTask.cancel(true);
+            }
+            currentTask = executor.submit(() -> {
                 RLottieDrawable drawable = new RLottieDrawable(stickerUiModel.resId, "" + stickerUiModel.resId, AndroidUtilities.dp(stickerUiModel.width), AndroidUtilities.dp(stickerUiModel.height), false, null);
                 AndroidUtilities.runOnUIThread(() -> {
                     mImgView.setAutoRepeat(true);
@@ -61,6 +71,7 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
                     mImgView.playAnimation();
                 });
             });
+
         }
     }
 

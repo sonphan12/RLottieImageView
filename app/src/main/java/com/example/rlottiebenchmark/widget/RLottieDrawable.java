@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
@@ -237,7 +238,9 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
                 try {
                     long ptrToUse;
                     ptrToUse = nativePtr;
+                    long x = System.currentTimeMillis();
                     int result = getFrame(ptrToUse, currentFrame, backgroundBitmap, width, height, backgroundBitmap.getRowBytes());
+                    Log.d("SON", ptrToUse + ": " + (System.currentTimeMillis() - x));
                     if (result == -1) {
                         uiHandler.post(uiRunnableNoFrame);
                         if (frameWaitSync != null) {
