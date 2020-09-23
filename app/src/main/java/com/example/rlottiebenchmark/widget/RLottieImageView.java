@@ -11,7 +11,6 @@ import java.util.HashMap;
 
 public class RLottieImageView extends AppCompatImageView {
 
-    private HashMap<String, Integer> layerColors;
     private RLottieDrawable drawable;
     private boolean autoRepeat;
     private boolean attachedToWindow;
@@ -25,42 +24,13 @@ public class RLottieImageView extends AppCompatImageView {
         super(context, attrs);
     }
 
-    public void setLayerColor(String layer, int color) {
-        if (layerColors == null) {
-            layerColors = new HashMap<>();
-        }
-        layerColors.put(layer, color);
-        if (drawable != null) {
-            drawable.setLayerColor(layer, color);
-        }
-    }
-
-    public void replaceColors(int[] colors) {
-        if (drawable != null) {
-            drawable.replaceColors(colors);
-        }
-    }
-
-    public void setAnimation(int resId, int w, int h) {
-        setAnimation(resId, w, h, null);
-    }
-
-    public void setAnimation(int resId, int w, int h, int[] colorReplacement) {
-        setAnimation(new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(w), AndroidUtilities.dp(h), false, colorReplacement));
-    }
 
     public void setAnimation(RLottieDrawable lottieDrawable) {
         drawable = lottieDrawable;
         if (autoRepeat) {
             drawable.setAutoRepeat(1);
         }
-        if (layerColors != null) {
-            drawable.beginApplyLayerColors();
-            for (HashMap.Entry<String, Integer> entry : layerColors.entrySet()) {
-                drawable.setLayerColor(entry.getKey(), entry.getValue());
-            }
-            drawable.commitApplyLayerColors();
-        }
+
         drawable.setAllowDecodeSingleFrame(true);
         setImageDrawable(drawable);
     }

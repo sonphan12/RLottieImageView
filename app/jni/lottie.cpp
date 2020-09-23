@@ -133,83 +133,12 @@ jlong Java_com_example_rlottiebenchmark_widget_RLottieDrawable_create(JNIEnv *en
     return (jlong) (intptr_t) info;
 }
 
-jlong Java_com_example_rlottiebenchmark_widget_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz, jstring json, jstring name, jintArray data, jintArray colorReplacement) {
-    std::map<int32_t, int32_t> *colors = nullptr;
-    if (colorReplacement != nullptr) {
-        jint *arr = env->GetIntArrayElements(colorReplacement, 0);
-        if (arr != nullptr) {
-            jsize len = env->GetArrayLength(colorReplacement);
-            colors = new std::map<int32_t, int32_t>();
-            for (int32_t a = 0; a < len / 2; a++) {
-                (*colors)[arr[a * 2]] = arr[a * 2 + 1];
-            }
-            env->ReleaseIntArrayElements(colorReplacement, arr, 0);
-        }
-    }
-
-    LottieInfo *info = new LottieInfo();
-
-    char const *jsonString = env->GetStringUTFChars(json, 0);
-    char const *nameString = env->GetStringUTFChars(name, 0);
-    info->animation = rlottie::Animation::loadFromData(jsonString, nameString, colors);
-    if (jsonString != 0) {
-        env->ReleaseStringUTFChars(json, jsonString);
-    }
-    if (nameString != 0) {
-        env->ReleaseStringUTFChars(name, nameString);
-    }
-    if (info->animation == nullptr) {
-        delete info;
-        return 0;
-    }
-    info->frameCount = info->animation->totalFrame();
-    info->fps = (int) info->animation->frameRate();
-
-    jint *dataArr = env->GetIntArrayElements(data, 0);
-    if (dataArr != nullptr) {
-        dataArr[0] = (int) info->frameCount;
-        dataArr[1] = (int) info->animation->frameRate();
-        dataArr[2] = 0;
-        env->ReleaseIntArrayElements(data, dataArr, 0);
-    }
-    return (jlong) (intptr_t) info;
-}
-
 void Java_com_example_rlottiebenchmark_widget_RLottieDrawable_destroy(JNIEnv *env, jclass clazz, jlong ptr) {
     if (ptr == NULL) {
         return;
     }
     LottieInfo *info = (LottieInfo *) (intptr_t) ptr;
     delete info;
-}
-
-void Java_com_example_rlottiebenchmark_widget_RLottieDrawable_setLayerColor(JNIEnv *env, jclass clazz, jlong ptr, jstring layer, jint color) {
-    if (ptr == NULL || layer == nullptr) {
-        return;
-    }
-    LottieInfo *info = (LottieInfo *) (intptr_t) ptr;
-    char const *layerString = env->GetStringUTFChars(layer, 0);
-    info->animation->setValue<Property::Color>(layerString, Color(((color) & 0xff) / 255.0f, ((color >> 8) & 0xff) / 255.0f, ((color >> 16) & 0xff) / 255.0f));
-    if (layerString != 0) {
-        env->ReleaseStringUTFChars(layer, layerString);
-    }
-}
-
-void Java_com_example_rlottiebenchmark_widget_RLottieDrawable_replaceColors(JNIEnv *env, jclass clazz, jlong ptr, jintArray colorReplacement) {
-    if (ptr == NULL || colorReplacement == nullptr) {
-        return;
-    }
-    LottieInfo *info = (LottieInfo *) (intptr_t) ptr;
-
-    jint *arr = env->GetIntArrayElements(colorReplacement, 0);
-    if (arr != nullptr) {
-        jsize len = env->GetArrayLength(colorReplacement);
-        for (int32_t a = 0; a < len / 2; a++) {
-            (*info->animation->colorMap)[arr[a * 2]] = arr[a * 2 + 1];
-        }
-        info->animation->resetCurrentFrame();
-        env->ReleaseIntArrayElements(colorReplacement, arr, 0);
-    }
 }
 
 bool cacheWriteThreadCreated{false};

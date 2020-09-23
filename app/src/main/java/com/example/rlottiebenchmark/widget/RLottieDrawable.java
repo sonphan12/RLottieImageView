@@ -10,17 +10,13 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
 import com.example.rlottiebenchmark.DispatchQueuePool;
-import com.example.rlottiebenchmark.MyApplication;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,13 +29,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
     public static native long create(String src, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps);
 
-    private static native long createWithJson(String json, String name, int[] params, int[] colorReplacement);
-
     public static native void destroy(long ptr);
-
-    private static native void setLayerColor(long ptr, String layer, int color);
-
-    private static native void replaceColors(long ptr, int[] colorReplacement);
 
     public static native int getFrame(long ptr, int frame, Bitmap bitmap, int w, int h, int stride);
 
@@ -51,10 +41,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     private int timeBetweenFrames;
     private int customEndFrame = -1;
     private boolean playInDirectionOfCustomEndFrame;
-    private int[] newReplaceColors;
-    private int[] pendingReplaceColors;
-    private HashMap<String, Integer> newColorUpdates = new HashMap<>();
-    private volatile HashMap<String, Integer> pendingColorUpdates = new HashMap<>();
     private HashMap<Integer, Integer> vibrationPattern;
 
     private WeakReference<Runnable> onFinishCallback;
@@ -97,9 +83,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
     private boolean isInvalid;
     private boolean doNotRemoveInvalidOnFrameReady;
-
-    private static ThreadLocal<byte[]> readBufferLocal = new ThreadLocal<>();
-    private static ThreadLocal<byte[]> bufferLocal = new ThreadLocal<>();
 
     private ArrayList<WeakReference<View>> parentViews = new ArrayList<>();
     private static DispatchQueuePool loadFrameRunnableQueue = new DispatchQueuePool(4);
@@ -222,20 +205,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             }
             if (backgroundBitmap != null) {
                 try {
-                    if (!pendingColorUpdates.isEmpty()) {
-                        for (HashMap.Entry<String, Integer> entry : pendingColorUpdates.entrySet()) {
-                            setLayerColor(nativePtr, entry.getKey(), entry.getValue());
-                        }
-                        pendingColorUpdates.clear();
-                    }
-                } catch (Exception ignore) {
-
-                }
-                if (pendingReplaceColors != null) {
-                    replaceColors(nativePtr, pendingReplaceColors);
-                    pendingReplaceColors = null;
-                }
-                try {
                     long ptrToUse;
                     ptrToUse = nativePtr;
                     long x = System.currentTimeMillis();
@@ -322,73 +291,6 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             shouldLimitFps = false;
         }
         timeBetweenFrames = Math.max(shouldLimitFps ? 33 : 16, (int) (1000.0f / metaData[1]));
-    }
-
-    public RLottieDrawable(int rawRes, String name, int w, int h) {
-        this(rawRes, name, w, h, true, null);
-    }
-
-    public RLottieDrawable(int rawRes, String name, int w, int h, boolean startDecode, int[] colorReplacement) {
-        width = w;
-        height = h;
-        autoRepeat = 0;
-        String jsonString = readRes(null, rawRes);
-        if (TextUtils.isEmpty(jsonString)) {
-            return;
-        }
-        getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
-        nativePtr = createWithJson(jsonString, name, metaData, colorReplacement);
-        timeBetweenFrames = Math.max(16, (int) (1000.0f / metaData[1]));
-        if (startDecode) {
-            setAllowDecodeSingleFrame(true);
-        }
-    }
-
-    private String readRes(File path, int rawRes) {
-        int totalRead = 0;
-        byte[] readBuffer = readBufferLocal.get();
-        if (readBuffer == null) {
-            readBuffer = new byte[64 * 1024];
-            readBufferLocal.set(readBuffer);
-        }
-        InputStream inputStream = null;
-        try {
-            if (path != null) {
-                inputStream = new FileInputStream(path);
-            } else {
-                inputStream = MyApplication.applicationContext.getResources().openRawResource(rawRes);
-            }
-            int readLen;
-            byte[] buffer = bufferLocal.get();
-            if (buffer == null) {
-                buffer = new byte[4096];
-                bufferLocal.set(buffer);
-            }
-            while ((readLen = inputStream.read(buffer, 0, buffer.length)) >= 0) {
-                if (readBuffer.length < totalRead + readLen) {
-                    byte[] newBuffer = new byte[readBuffer.length * 2];
-                    System.arraycopy(readBuffer, 0, newBuffer, 0, totalRead);
-                    readBuffer = newBuffer;
-                    readBufferLocal.set(readBuffer);
-                }
-                if (readLen > 0) {
-                    System.arraycopy(buffer, 0, readBuffer, totalRead, readLen);
-                    totalRead += readLen;
-                }
-            }
-        } catch (Throwable e) {
-            return null;
-        } finally {
-            try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-            } catch (Throwable ignore) {
-
-            }
-        }
-
-        return new String(readBuffer, 0, totalRead);
     }
 
     public int getCurrentFrame() {
@@ -567,43 +469,12 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         invalidateInternal();
     }
 
-    public void replaceColors(int[] colors) {
-        newReplaceColors = colors;
-        requestRedrawColors();
-    }
-
-    public void setLayerColor(String layerName, int color) {
-        newColorUpdates.put(layerName, color);
-        requestRedrawColors();
-    }
-
-    private void requestRedrawColors() {
-        if (!applyingLayerColors && !isRunning && decodeSingleFrame) {
-            if (currentFrame <= 2) {
-                currentFrame = 0;
-            }
-            nextFrameIsLast = false;
-            singleFrameDecoded = false;
-            if (!scheduleNextGetFrame()) {
-                forceFrameRedraw = true;
-            }
-        }
-        invalidateInternal();
-    }
-
     private boolean scheduleNextGetFrame() {
         if (loadFrameTask != null || nextRenderingBitmap != null || nativePtr == 0
                 || destroyWhenDone || !isRunning && (!decodeSingleFrame || decodeSingleFrame && singleFrameDecoded)) {
             return false;
         }
-        if (!newColorUpdates.isEmpty()) {
-            pendingColorUpdates.putAll(newColorUpdates);
-            newColorUpdates.clear();
-        }
-        if (newReplaceColors != null) {
-            pendingReplaceColors = newReplaceColors;
-            newReplaceColors = null;
-        }
+
         loadFrameRunnableQueue.execute(loadFrameTask = loadFrameRunnable);
         return true;
     }
