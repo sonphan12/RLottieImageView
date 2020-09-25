@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onPermissionsGranted() {
-        mStickerSize = getScreenWidth() / 5;
+        mStickerSize = 240;
 
         StickerAdapter adapter = new StickerAdapter();
         int spanCount = 5;
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     private List<StickerAdapter.StickerUiModel> buildStickers() {
         final List<StickerAdapter.StickerUiModel> result = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 15; i++) {
             String stickerName = "sticker_" + (i + 1);
             int resId = getResources().getIdentifier(stickerName, "raw", getPackageName());
             copyFiletoCache(resId, stickerName + ".zls");

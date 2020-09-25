@@ -57,18 +57,17 @@ class StickerAdapter extends RecyclerView.Adapter<StickerAdapter.StickerHolder> 
         }
 
         public void bindView(final StickerUiModel stickerUiModel, ExecutorService executor) {
-            mImgView.invalidate();
-            if (currentTask != null && (!currentTask.isCancelled() || !currentTask.isDone())) {
-                currentTask.cancel(true);
-            }
-            currentTask = executor.submit(() -> {
-                RLottieDrawable drawable = new RLottieDrawable(new File(stickerUiModel.path), AndroidUtilities.dp(stickerUiModel.width), AndroidUtilities.dp(stickerUiModel.height), true, false);
-                AndroidUtilities.runOnUIThread(() -> {
-                    mImgView.setAutoRepeat(true);
-                    mImgView.setAnimation(drawable);
-                    mImgView.playAnimation();
-                });
-            });
+//            mImgView.invalidate();
+//            if (currentTask != null && (!currentTask.isCancelled() || !currentTask.isDone())) {
+//                currentTask.cancel(true);
+//            }
+//            currentTask = executor.submit(() -> {
+            RLottieDrawable drawable = new RLottieDrawable(new File(stickerUiModel.path), stickerUiModel.width, stickerUiModel.height, false, true);
+            drawable.setAllowDecodeSingleFrame(true);
+            mImgView.setAutoRepeat(true);
+            mImgView.setAnimation(drawable);
+            mImgView.playAnimation();
+ //            });
 
         }
     }

@@ -6,14 +6,6 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
 
-    sourceSets.main.jniLibs.srcDirs = ['./jni/']
-
-    externalNativeBuild {
-        ndkBuild {
-            path "jni/Android.mk"
-        }
-    }
-
     defaultConfig {
         applicationId "com.example.rlottiebenchmark"
         minSdkVersion 21
@@ -24,9 +16,8 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
-            ndkBuild {
-                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-16", "--jobs=16"
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            cmake {
+                cppFlags "-std=c++14"
             }
         }
     }
@@ -35,6 +26,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+        externalNativeBuild {
+            cmake {
+                path "src/main/cpp/CMakeLists.txt"
+            }
         }
     }
     compileOptions {
