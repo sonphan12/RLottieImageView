@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 #include <utime.h>
 #include "c_utils.h"
-#include "gif/gif.h"
 #include "lottie.h"
 
 extern "C" {

@@ -2,7 +2,7 @@ package com.example.rlottiebenchmark;
 
 public class NativeLoader {
 
-    private final static String LIB_NAME = "jlottie";
+    private final static String LIB_NAME = "zlottie";
 
     private static volatile boolean nativeLoaded = false;
 

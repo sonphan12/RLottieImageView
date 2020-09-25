@@ -196,24 +196,18 @@ install(FILES
 )
 
 
-add_library(jlottie SHARED lottie.cpp)
-add_library(jlz4 SHARED lz4/lz4.c)
-target_include_directories(jlottie
+add_library(zlottie SHARED lottie.cpp)
+add_library(lz4 SHARED lz4/lz4.c)
+target_include_directories(zlottie
         PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}"
         )
 
-add_library(rlottie2gif SHARED gif/gif.cpp)
-target_include_directories(rlottie2gif
-        PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/gif"
-        )
 
-target_link_libraries(jlottie rlottie)
-target_link_libraries(jlottie jlz4)
-target_link_libraries(jlottie rlottie2gif)
+target_link_libraries(zlottie rlottie)
+target_link_libraries(zlottie lz4)
 target_link_libraries( # Specifies the target library.
-        jlottie
+        zlottie
         -ljnigraphics
 
         # Links the target library to the log library
