@@ -134,10 +134,14 @@ if (NOT LIB_INSTALL_DIR)
     set (LIB_INSTALL_DIR "/usr/lib")
 endif (NOT LIB_INSTALL_DIR)
 
-
 #declare source and include files
 add_subdirectory(inc)
 add_subdirectory(src)
+
+if (LOTTIE_TEST)
+    enable_testing()
+    add_subdirectory(test)
+endif()
 
 SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(EXEC_DIR ${PREFIX})

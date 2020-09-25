@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RLottieDrawable extends BitmapDrawable implements Animatable {
 
-    public static native long create(String src, int w, int h, int[] params, boolean precache, int[] colorReplacement, boolean limitFps);
+    public static native long create(String src, int w, int h, int[] params, boolean precache, boolean limitFps);
 
     public static native void destroy(long ptr);
 
@@ -343,16 +343,12 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     };
 
     public RLottieDrawable(File file, int w, int h, boolean precache, boolean limitFps) {
-        this(file, w, h, precache, limitFps, null);
-    }
-
-    public RLottieDrawable(File file, int w, int h, boolean precache, boolean limitFps, int[] colorReplacement) {
         width = w;
         height = h;
         shouldLimitFps = limitFps;
         getPaint().setFlags(Paint.FILTER_BITMAP_FLAG);
 
-        nativePtr = create(file.getAbsolutePath(), w, h, metaData, precache, colorReplacement, shouldLimitFps);
+        nativePtr = create(file.getAbsolutePath(), w, h, metaData, precache, shouldLimitFps);
         if (precache && lottieCacheGenerateQueue == null) {
             lottieCacheGenerateQueue = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         }

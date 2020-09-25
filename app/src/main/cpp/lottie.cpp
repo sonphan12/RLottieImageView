@@ -21,30 +21,11 @@ jlong Java_com_example_rlottiebenchmark_widget_RLottieDrawable_create(JNIEnv *en
                                                                       jstring src, jint w, jint h,
                                                                       jintArray data,
                                                                       jboolean precache,
-                                                                      jintArray colorReplacement,
                                                                       jboolean limitFps) {
     LottieInfo *info = new LottieInfo();
-
-    std::map<int32_t, int32_t> *colors = nullptr;
-    int color = 0;
-    if (colorReplacement != nullptr) {
-        jint *arr = env->GetIntArrayElements(colorReplacement, 0);
-        if (arr != nullptr) {
-            jsize len = env->GetArrayLength(colorReplacement);
-            colors = new std::map<int32_t, int32_t>();
-            for (int32_t a = 0; a < len / 2; a++) {
-                (*colors)[arr[a * 2]] = arr[a * 2 + 1];
-                if (color == 0) {
-                    color = arr[a * 2 + 1];
-                }
-            }
-            env->ReleaseIntArrayElements(colorReplacement, arr, 0);
-        }
-    }
-
     char const *srcString = env->GetStringUTFChars(src, 0);
     info->path = srcString;
-    info->animation = rlottie::Animation::loadFromFile(info->path, colors);
+    info->animation = rlottie::Animation::loadFromFile(info->path, true);
     if (srcString != 0) {
         env->ReleaseStringUTFChars(src, srcString);
     }
@@ -69,9 +50,6 @@ jlong Java_com_example_rlottiebenchmark_widget_RLottieDrawable_create(JNIEnv *en
             info->cacheFile.insert(index, "/acache");
         }
         info->cacheFile += std::to_string(w) + "_" + std::to_string(h);
-        if (color != 0) {
-            info->cacheFile += "_" + std::to_string(color);
-        }
         if (limitFps) {
             info->cacheFile += ".s.cache";
         } else {
@@ -101,52 +79,6 @@ jlong Java_com_example_rlottiebenchmark_widget_RLottieDrawable_create(JNIEnv *en
         dataArr[0] = (jint) info->frameCount;
         dataArr[1] = (jint) info->animation->frameRate();
         dataArr[2] = info->createCache ? 1 : 0;
-        env->ReleaseIntArrayElements(data, dataArr, 0);
-    }
-    return (jlong) (intptr_t) info;
-}
-
-jlong
-Java_com_example_rlottiebenchmark_widget_RLottieDrawable_createWithJson(JNIEnv *env, jclass clazz,
-                                                                        jstring json, jstring name,
-                                                                        jintArray data,
-                                                                        jintArray colorReplacement) {
-    std::map<int32_t, int32_t> *colors = nullptr;
-    if (colorReplacement != nullptr) {
-        jint *arr = env->GetIntArrayElements(colorReplacement, 0);
-        if (arr != nullptr) {
-            jsize len = env->GetArrayLength(colorReplacement);
-            colors = new std::map<int32_t, int32_t>();
-            for (int32_t a = 0; a < len / 2; a++) {
-                (*colors)[arr[a * 2]] = arr[a * 2 + 1];
-            }
-            env->ReleaseIntArrayElements(colorReplacement, arr, 0);
-        }
-    }
-
-    LottieInfo *info = new LottieInfo();
-
-    char const *jsonString = env->GetStringUTFChars(json, 0);
-    char const *nameString = env->GetStringUTFChars(name, 0);
-    info->animation = rlottie::Animation::loadFromData(jsonString, nameString, colors);
-    if (jsonString != 0) {
-        env->ReleaseStringUTFChars(json, jsonString);
-    }
-    if (nameString != 0) {
-        env->ReleaseStringUTFChars(name, nameString);
-    }
-    if (info->animation == nullptr) {
-        delete info;
-        return 0;
-    }
-    info->frameCount = info->animation->totalFrame();
-    info->fps = (int) info->animation->frameRate();
-
-    jint *dataArr = env->GetIntArrayElements(data, 0);
-    if (dataArr != nullptr) {
-        dataArr[0] = (int) info->frameCount;
-        dataArr[1] = (int) info->animation->frameRate();
-        dataArr[2] = 0;
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }
     return (jlong) (intptr_t) info;
