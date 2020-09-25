@@ -215,6 +215,34 @@ void Java_com_example_rlottiebenchmark_widget_RLottieDrawable_createCache(JNIEnv
     }
 }
 
+void convertToRBGABitmap(uint8_t* buffer, jint w, jint h) {
+    int      totalBytes = w * h * 4;
+    for (int i = 0; i < totalBytes; i += 4) {
+        unsigned char a = buffer[i + 3];
+        // compute only if alpha is non zero
+        if (a) {
+            unsigned char r = buffer[i + 2];
+            unsigned char g = buffer[i + 1];
+            unsigned char b = buffer[i];
+
+            if (a != 255) {  // un premultiply
+                r = (r * 255) / a;
+                g = (g * 255) / a;
+                b = (b * 255) / a;
+
+                buffer[i] = r;
+                buffer[i + 1] = g;
+                buffer[i + 2] = b;
+
+            } else {
+                // only swizzle r and b
+                buffer[i] = r;
+                buffer[i + 2] = b;
+            }
+        }
+    }
+}
+
 jint Java_com_example_rlottiebenchmark_widget_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz,
                                                                        jlong ptr, jint frame,
                                                                        jobject bitmap, jint w,
@@ -271,6 +299,7 @@ jint Java_com_example_rlottiebenchmark_widget_RLottieDrawable_getFrame(JNIEnv *e
             if (!info->nextFrameIsCacheFrame || !info->precache) {
                 Surface surface((uint32_t *) pixels, (size_t) w, (size_t) h, (size_t) stride);
                 info->animation->renderSync((size_t) frame, surface);
+                convertToRBGABitmap((uint8_t *) surface.buffer(), w, h);
                 info->nextFrameIsCacheFrame = true;
             }
         }
@@ -279,4 +308,6 @@ jint Java_com_example_rlottiebenchmark_widget_RLottieDrawable_getFrame(JNIEnv *e
     }
     return frame;
 }
+
 }
+
